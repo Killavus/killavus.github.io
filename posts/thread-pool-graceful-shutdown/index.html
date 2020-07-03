@@ -8,16 +8,16 @@
 	<meta name="theme-color" content="#494f5c">
 	<meta name="msapplication-TileColor" content="#494f5c">
 <meta itemprop="name" content="Graceful keyboard shutdown of thread pool in Rust">
-<meta itemprop="description" content="While writing a Discord bot using serenity-rs I wanted to create a thread pool to properly process events coming from Discord events. The architecture looked something like this:
+<meta itemprop="description" content="While writing a Discord bot using serenity-rs I wanted to create a thread pool to properly process events coming from Discord. The architecture looked something like this:
 userayon;usestd::sync::mpsc::{channel,Receiver,Sender};usestd::thread::{self,JoinHandle};enum Command{/* snip */}struct WorkerPool{receiver: Option&lt;JoinHandle&lt;()&gt;&gt;,sender: Option&lt;Sender&lt;Command&gt;&gt;,}implWorkerPool{fn new()-&gt; Self{let(tx,rx)=channel();letreceiver_thread=thread::spawn(move||{letpool=rayon::ThreadPoolBuilder::new().num_threads(8).build().unwrap();whileletOk(command)=rx.recv(){/* do matching logic */pool.spawn(||do_command(command));}eprintln!(&#34;Worker loop done.&#34;);});Self{receiver: Some(receiver_thread),sender: Some(tx),}}fn tx(&amp;self)-&gt; Sender&lt;Command&gt;{self.sender.unwrap().clone()}}/* Ensure thread is joined when WorkerPool goes out of scope. */implDropforWorkerPool{fn drop(&amp;mutself){self.sender.take();self.receiver.take().and_then(|handle|handle.join().ok());eprintln!(&#34;dropped worker pool thread&#34;);}}fn main(){letworker_pool=WorkerPool::new();letdiscord=Discord::new(worker_pool.tx());// This blocks the main thread! discord.start();eprintln!(&#34;Good bye!&#34;);}This code does couple of things:">
 <meta itemprop="datePublished" content="2020-07-03T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2020-07-03T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="704">
+<meta itemprop="wordCount" content="703">
 
 
 
 <meta itemprop="keywords" content="" /><meta property="og:title" content="Graceful keyboard shutdown of thread pool in Rust" />
-<meta property="og:description" content="While writing a Discord bot using serenity-rs I wanted to create a thread pool to properly process events coming from Discord events. The architecture looked something like this:
+<meta property="og:description" content="While writing a Discord bot using serenity-rs I wanted to create a thread pool to properly process events coming from Discord. The architecture looked something like this:
 userayon;usestd::sync::mpsc::{channel,Receiver,Sender};usestd::thread::{self,JoinHandle};enum Command{/* snip */}struct WorkerPool{receiver: Option&lt;JoinHandle&lt;()&gt;&gt;,sender: Option&lt;Sender&lt;Command&gt;&gt;,}implWorkerPool{fn new()-&gt; Self{let(tx,rx)=channel();letreceiver_thread=thread::spawn(move||{letpool=rayon::ThreadPoolBuilder::new().num_threads(8).build().unwrap();whileletOk(command)=rx.recv(){/* do matching logic */pool.spawn(||do_command(command));}eprintln!(&#34;Worker loop done.&#34;);});Self{receiver: Some(receiver_thread),sender: Some(tx),}}fn tx(&amp;self)-&gt; Sender&lt;Command&gt;{self.sender.unwrap().clone()}}/* Ensure thread is joined when WorkerPool goes out of scope. */implDropforWorkerPool{fn drop(&amp;mutself){self.sender.take();self.receiver.take().and_then(|handle|handle.join().ok());eprintln!(&#34;dropped worker pool thread&#34;);}}fn main(){letworker_pool=WorkerPool::new();letdiscord=Discord::new(worker_pool.tx());// This blocks the main thread! discord.start();eprintln!(&#34;Good bye!&#34;);}This code does couple of things:" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://killavus.github.io/posts/thread-pool-graceful-shutdown/" />
@@ -25,7 +25,7 @@ userayon;usestd::sync::mpsc::{channel,Receiver,Sender};usestd::thread::{self,Joi
 <meta property="article:modified_time" content="2020-07-03T00:00:00+00:00" />
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Graceful keyboard shutdown of thread pool in Rust"/>
-<meta name="twitter:description" content="While writing a Discord bot using serenity-rs I wanted to create a thread pool to properly process events coming from Discord events. The architecture looked something like this:
+<meta name="twitter:description" content="While writing a Discord bot using serenity-rs I wanted to create a thread pool to properly process events coming from Discord. The architecture looked something like this:
 userayon;usestd::sync::mpsc::{channel,Receiver,Sender};usestd::thread::{self,JoinHandle};enum Command{/* snip */}struct WorkerPool{receiver: Option&lt;JoinHandle&lt;()&gt;&gt;,sender: Option&lt;Sender&lt;Command&gt;&gt;,}implWorkerPool{fn new()-&gt; Self{let(tx,rx)=channel();letreceiver_thread=thread::spawn(move||{letpool=rayon::ThreadPoolBuilder::new().num_threads(8).build().unwrap();whileletOk(command)=rx.recv(){/* do matching logic */pool.spawn(||do_command(command));}eprintln!(&#34;Worker loop done.&#34;);});Self{receiver: Some(receiver_thread),sender: Some(tx),}}fn tx(&amp;self)-&gt; Sender&lt;Command&gt;{self.sender.unwrap().clone()}}/* Ensure thread is joined when WorkerPool goes out of scope. */implDropforWorkerPool{fn drop(&amp;mutself){self.sender.take();self.receiver.take().and_then(|handle|handle.join().ok());eprintln!(&#34;dropped worker pool thread&#34;);}}fn main(){letworker_pool=WorkerPool::new();letdiscord=Discord::new(worker_pool.tx());// This blocks the main thread! discord.start();eprintln!(&#34;Good bye!&#34;);}This code does couple of things:"/>
 
 	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
@@ -73,7 +73,7 @@ userayon;usestd::sync::mpsc::{channel,Receiver,Sender};usestd::thread::{self,Joi
 				<h1>Graceful keyboard shutdown of thread pool in Rust</h1>
 			</header>
 			<div class="content">
-				<p>While writing a Discord bot using <a href="https://github.com/serenity-rs/serenity">serenity-rs</a> I wanted to create a thread pool to properly process events coming from Discord events. The architecture looked something like this:</p>
+				<p>While writing a Discord bot using <a href="https://github.com/serenity-rs/serenity">serenity-rs</a> I wanted to create a thread pool to properly process events coming from Discord. The architecture looked something like this:</p>
 <div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">use</span><span class="w"> </span><span class="n">rayon</span><span class="p">;</span><span class="w">
 </span><span class="w"></span><span class="k">use</span><span class="w"> </span><span class="n">std</span>::<span class="n">sync</span>::<span class="n">mpsc</span>::<span class="p">{</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">Receiver</span><span class="p">,</span><span class="w"> </span><span class="n">Sender</span><span class="p">};</span><span class="w">
 </span><span class="w"></span><span class="k">use</span><span class="w"> </span><span class="n">std</span>::<span class="n">thread</span>::<span class="p">{</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">JoinHandle</span><span class="p">};</span><span class="w">
@@ -178,7 +178,7 @@ userayon;usestd::sync::mpsc::{channel,Receiver,Sender};usestd::thread::{self,Joi
 			<hr class="post-end">
 			<footer class="post-info">
 				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-feather"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg>Marcin Grzywaczewski</p>
-				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>704 Words</p>
+				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>703 Words</p>
 				<p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2020-07-03 02:00 &#43;0200</p>
 			</footer>
 		</article>
