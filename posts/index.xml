@@ -1,0 +1,123 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>Posts on Killavus Blog</title>
+		<link>https://example.com/posts/</link>
+		<description>Recent content in Posts on Killavus Blog</description>
+		<generator>Hugo -- gohugo.io</generator>
+		<language>en-us</language>
+		<copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright>
+		<lastBuildDate>Fri, 03 Jul 2020 00:00:00 +0000</lastBuildDate>
+		<atom:link href="https://example.com/posts/index.xml" rel="self" type="application/rss+xml" />
+		
+		<item>
+			<title>Graceful keyboard shutdown of thread pool in Rust</title>
+			<link>https://example.com/posts/thread-pool-graceful-shutdown/</link>
+			<pubDate>Fri, 03 Jul 2020 00:00:00 +0000</pubDate>
+			
+			<guid>https://example.com/posts/thread-pool-graceful-shutdown/</guid>
+			<description>While writing a Discord bot using serenity-rs I wanted to create a thread pool to properly process events coming from Discord events. The architecture looked something like this:
+userayon;usestd::sync::mpsc::{channel,Receiver,Sender};usestd::thread::{self,JoinHandle};enum Command{/* snip */}struct WorkerPool{receiver: Option&amp;lt;JoinHandle&amp;lt;()&amp;gt;&amp;gt;,sender: Option&amp;lt;Sender&amp;lt;Command&amp;gt;&amp;gt;,}implWorkerPool{fn new()-&amp;gt; Self{let(tx,rx)=channel();letreceiver_thread=thread::spawn(move||{letpool=rayon::ThreadPoolBuilder::new().num_threads(8).build().unwrap();whileletOk(command)=rx.recv(){/* do matching logic */pool.spawn(||do_command(command));}eprintln!(&amp;#34;Worker loop done.&amp;#34;);});Self{receiver: Some(receiver_thread),sender: Some(tx),}}fn tx(&amp;amp;self)-&amp;gt; Sender&amp;lt;Command&amp;gt;{self.sender.unwrap().clone()}}/* Ensure thread is joined when WorkerPool goes out of scope. */implDropforWorkerPool{fn drop(&amp;amp;mutself){self.sender.take();self.receiver.take().and_then(|handle|handle.join().ok());eprintln!(&amp;#34;dropped worker pool thread&amp;#34;);}}fn main(){letworker_pool=WorkerPool::new();letdiscord=Discord::new(worker_pool.tx());// This blocks the main thread! discord.start();eprintln!(&amp;#34;Good bye!&amp;#34;);}This code does couple of things:</description>
+			<content type="html"><![CDATA[<p>While writing a Discord bot using <a href="https://github.com/serenity-rs/serenity">serenity-rs</a> I wanted to create a thread pool to properly process events coming from Discord events. The architecture looked something like this:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">use</span><span class="w"> </span><span class="n">rayon</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="k">use</span><span class="w"> </span><span class="n">std</span>::<span class="n">sync</span>::<span class="n">mpsc</span>::<span class="p">{</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">Receiver</span><span class="p">,</span><span class="w"> </span><span class="n">Sender</span><span class="p">};</span><span class="w">
+</span><span class="w"></span><span class="k">use</span><span class="w"> </span><span class="n">std</span>::<span class="n">thread</span>::<span class="p">{</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">JoinHandle</span><span class="p">};</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">enum</span> <span class="nc">Command</span><span class="w"> </span><span class="p">{</span><span class="cm">/* snip */</span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">struct</span> <span class="nc">WorkerPool</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">receiver</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">JoinHandle</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">sender</span>: <span class="nb">Option</span><span class="o">&lt;</span><span class="n">Sender</span><span class="o">&lt;</span><span class="n">Command</span><span class="o">&gt;&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="n">WorkerPool</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">new</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nc">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="p">(</span><span class="n">tx</span><span class="p">,</span><span class="w"> </span><span class="n">rx</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">channel</span><span class="p">();</span><span class="w">
+</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">receiver_thread</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">thread</span>::<span class="n">spawn</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rayon</span>::<span class="n">ThreadPoolBuilder</span>::<span class="n">new</span><span class="p">()</span><span class="w">
+</span><span class="w">                </span><span class="p">.</span><span class="n">num_threads</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="w">
+</span><span class="w">                </span><span class="p">.</span><span class="n">build</span><span class="p">()</span><span class="w">
+</span><span class="w">                </span><span class="p">.</span><span class="n">unwrap</span><span class="p">();</span><span class="w">
+</span><span class="w">
+</span><span class="w">            </span><span class="k">while</span><span class="w"> </span><span class="kd">let</span><span class="w"> </span><span class="nb">Ok</span><span class="p">(</span><span class="n">command</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rx</span><span class="p">.</span><span class="n">recv</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">                </span><span class="cm">/* do matching logic */</span><span class="w">
+</span><span class="w">                </span><span class="n">pool</span><span class="p">.</span><span class="n">spawn</span><span class="p">(</span><span class="o">||</span><span class="w"> </span><span class="n">do_command</span><span class="p">(</span><span class="n">command</span><span class="p">));</span><span class="w">
+</span><span class="w">            </span><span class="p">}</span><span class="w">
+</span><span class="w">            </span><span class="n">eprintln</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;Worker loop done.&#34;</span><span class="p">);</span><span class="w">
+</span><span class="w">        </span><span class="p">});</span><span class="w">
+</span><span class="w">
+</span><span class="w">        </span><span class="n">Self</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="n">receiver</span>: <span class="nb">Some</span><span class="p">(</span><span class="n">receiver_thread</span><span class="p">),</span><span class="w">
+</span><span class="w">            </span><span class="n">sender</span>: <span class="nb">Some</span><span class="p">(</span><span class="n">tx</span><span class="p">),</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">tx</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nc">Sender</span><span class="o">&lt;</span><span class="n">Command</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">sender</span><span class="p">.</span><span class="n">unwrap</span><span class="p">().</span><span class="n">clone</span><span class="p">()</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="cm">/* Ensure thread is joined when WorkerPool goes out of scope. */</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="w"> </span><span class="nb">Drop</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">WorkerPool</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">drop</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="bp">self</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">sender</span><span class="p">.</span><span class="n">take</span><span class="p">();</span><span class="w">
+</span><span class="w">        </span><span class="bp">self</span><span class="p">.</span><span class="n">receiver</span><span class="p">.</span><span class="n">take</span><span class="p">().</span><span class="n">and_then</span><span class="p">(</span><span class="o">|</span><span class="n">handle</span><span class="o">|</span><span class="w"> </span><span class="n">handle</span><span class="p">.</span><span class="n">join</span><span class="p">().</span><span class="n">ok</span><span class="p">());</span><span class="w">
+</span><span class="w">        </span><span class="n">eprintln</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;dropped worker pool thread&#34;</span><span class="p">);</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">worker_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WorkerPool</span>::<span class="n">new</span><span class="p">();</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">discord</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Discord</span>::<span class="n">new</span><span class="p">(</span><span class="n">worker_pool</span><span class="p">.</span><span class="n">tx</span><span class="p">());</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="c1">// This blocks the main thread!
+</span><span class="c1"></span><span class="w">    </span><span class="n">discord</span><span class="p">.</span><span class="n">start</span><span class="p">();</span><span class="w">
+</span><span class="w">    </span><span class="n">eprintln</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;Good bye!&#34;</span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div><p>This code does couple of things:</p>
+<ul>
+<li>Worker pool is created containing 8 threads + one receiver thread. Receiver thread is light-weight and only interested in passing the message further to pool of threads.</li>
+<li>I keep the instance of Sender inside <code>WorkerPool</code> struct. <code>.recv()</code> call will error out when every <code>Sender</code> will die - which will end the loop inside receiver thread. So when <code>WorkerPool</code> is dropped receiver thread will be kept alive as long as there are other cloned <code>Sender</code>s active.</li>
+<li>By default in Rust threads are detached from the main thread, meaning they can outlive the thread which spaned them. That&rsquo;s why I implement <code>Drop</code> for <code>WorkerPool</code> - it <code>join</code>s the receiver thread so it dies before main thread dies. It is <em>very important</em> to drop <code>Sender</code> before joining receiver thread - otherwise it&rsquo;ll unconditionally deadlock. This is done by in this code by taking it our of option and forgetting the value immediately.</li>
+</ul>
+<p>When I ran this code I&rsquo;ve expected everything working properly - that I should see &ldquo;Worker loop done&rdquo;, &ldquo;dropped worker pool thread&rdquo; and &ldquo;Good bye!&rdquo; messages. Unfortunately this is not the case.</p>
+<h2 id="why-this-code-is-broken">Why this code is broken?</h2>
+<p>Handling keyboard interrupts are generally done using so-called <a href="https://en.wikipedia.org/wiki/Signal_(IPC)#SIGINT">signals</a> which, by default, forces the process to terminate immediately. Rust is <em>not</em> overriding this behaviour - which means no destructors will be called and the general <a href="https://doc.rust-lang.org/nomicon/unwinding.html">unwinding</a> won&rsquo;t happen. That means our threads won&rsquo;t get joined gracefully - they&rsquo;ll get shutdown by the process clean-up procedure of your operating system.</p>
+<p>In order to fix the program you need to capture this interrupt signal and break out of main thread block. After <code>main</code> ends, everything will get cleaned up correctly.</p>
+<h2 id="cross-platform-fix-ctrlc-crate">Cross-platform fix: <code>ctrlc</code> crate</h2>
+<p>I spent quite some time to think about how to perform this task in a cross-platform way - especially because I have no knowledge about how signal handling works on Windows family of operating systems. Fortunately there is a very nice crate for this task called  <a href="https://github.com/Detegr/rust-ctrlc"><code>ctrlc</code></a> which allows us to solve this problem.</p>
+<p>In my particular case, to break out of main thread block after starting the client in <code>serenity-rs</code> there is a <a href="https://docs.rs/serenity/0.8.6/serenity/client/bridge/gateway/struct.ShardManager.html#method.shutdown_all"><code>shutdown_all</code></a> method in <code>ShardManager</code> part of the client. Since it is possible to call it while having shared reference to client, the code is very straightforward:</p>
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="cm">/* In Cargo.toml:
+</span><span class="cm"> * [dependencies]
+</span><span class="cm"> * ctrlc = &#34;3.1&#34;
+</span><span class="cm"> */</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">worker_pool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">WorkerPool</span>::<span class="n">new</span><span class="p">();</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">discord</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Discord</span>::<span class="n">new</span><span class="p">(</span><span class="n">worker_pool</span><span class="p">.</span><span class="n">tx</span><span class="p">());</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="c1">// Gracefully shutdown on keyboard interrupt:
+</span><span class="c1"></span><span class="w">    </span><span class="c1">// Shard manager is behind Arc:
+</span><span class="c1"></span><span class="w">    </span><span class="c1">// https://docs.rs/serenity/0.8.6/serenity/client/struct.Client.html#structfield.shard_manager
+</span><span class="c1"></span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">shard_manager</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">discord</span><span class="p">.</span><span class="n">serenity_client</span><span class="p">.</span><span class="n">shard_manager</span><span class="p">.</span><span class="n">clone</span><span class="p">();</span><span class="w">
+</span><span class="w">    </span><span class="n">ctrlc</span>::<span class="n">set_handler</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">shard_manager</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">shutdown_all</span><span class="p">());</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="c1">// This blocks the main thread!
+</span><span class="c1"></span><span class="w">    </span><span class="n">client</span><span class="p">.</span><span class="n">start</span><span class="p">();</span><span class="w">
+</span><span class="w">    </span><span class="n">eprintln</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;Good bye!&#34;</span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div><p><code>ctrlc::set_handler</code> replaces the default behaviour of <code>SIGINT</code> signal (and <code>SIGTERM</code> if you want - behind the feature flag) which now disconnects <code>serenity-rs</code> <code>Client</code> from Discord servers, allowing <code>start()</code> method to finish.</p>
+<p>What&rsquo;s important, <em>everything you put into <code>set_handler</code> must be thread-safe</em>. Signal handlers are really hard to get right - you are allowed to safely perform only so-called <a href="https://en.wikipedia.org/wiki/Reentrancy_(computing)">reentrant</a> operations. Under the hood <code>ctrlc</code> spawns an another thread to perform your (possibly not reentrant) operations safely.</p>
+<h2 id="conclusions">Conclusions</h2>
+<ul>
+<li>Rust is following the default behaviour when it comes to signal handling - meaning interrupts by keyboard will abruptly terminate your process <strong>without</strong> running destructors for your data.</li>
+<li><code>ctrlc</code> allows you to override the default behaviour of keyboard interrupts in a cross-platform way.</li>
+<li>Remember that your code in <code>set_handler</code> needs to be thread-safe.</li>
+<li>In case of <code>serenity-rs</code> there is a way to shutdown client in a thread-safe manner. You may need to find ways to do it in your use case. Common techniques include sending a special <code>quit</code> command using channels, setting an atomic flag or using non-RAII destructor methods exposed by your types.</li>
+</ul>
+<h2 id="sample-github-code">Sample GitHub code</h2>
+<p>I&rsquo;ve put a simplified code example to this post (where <code>serenity-rs</code> is replaced with a dummy structure with a similar interface) <a href="https://github.com/Killavus/rust-graceful-kb-interrupt-handling">on my GitHub</a>. Feel free to clone it and tinker with it as you please!</p>
+]]></content>
+		</item>
+		
+	</channel>
+</rss>
