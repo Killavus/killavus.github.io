@@ -2,22 +2,22 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Killavus Blog</title>
-    <link>https://example.com/</link>
+    <link>https://killavus.github.io/</link>
     <description>Recent content on Killavus Blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.</copyright>
     <lastBuildDate>Fri, 03 Jul 2020 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="https://example.com/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://killavus.github.io/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Graceful keyboard shutdown of thread pool in Rust</title>
-      <link>https://example.com/posts/thread-pool-graceful-shutdown/</link>
+      <link>https://killavus.github.io/posts/thread-pool-graceful-shutdown/</link>
       <pubDate>Fri, 03 Jul 2020 00:00:00 +0000</pubDate>
       
-      <guid>https://example.com/posts/thread-pool-graceful-shutdown/</guid>
+      <guid>https://killavus.github.io/posts/thread-pool-graceful-shutdown/</guid>
       <description>While writing a Discord bot using serenity-rs I wanted to create a thread pool to properly process events coming from Discord events. The architecture looked something like this:
 userayon;usestd::sync::mpsc::{channel,Receiver,Sender};usestd::thread::{self,JoinHandle};enum Command{/* snip */}struct WorkerPool{receiver: Option&amp;lt;JoinHandle&amp;lt;()&amp;gt;&amp;gt;,sender: Option&amp;lt;Sender&amp;lt;Command&amp;gt;&amp;gt;,}implWorkerPool{fn new()-&amp;gt; Self{let(tx,rx)=channel();letreceiver_thread=thread::spawn(move||{letpool=rayon::ThreadPoolBuilder::new().num_threads(8).build().unwrap();whileletOk(command)=rx.recv(){/* do matching logic */pool.spawn(||do_command(command));}eprintln!(&amp;#34;Worker loop done.&amp;#34;);});Self{receiver: Some(receiver_thread),sender: Some(tx),}}fn tx(&amp;amp;self)-&amp;gt; Sender&amp;lt;Command&amp;gt;{self.sender.unwrap().clone()}}/* Ensure thread is joined when WorkerPool goes out of scope. */implDropforWorkerPool{fn drop(&amp;amp;mutself){self.sender.take();self.receiver.take().and_then(|handle|handle.join().ok());eprintln!(&amp;#34;dropped worker pool thread&amp;#34;);}}fn main(){letworker_pool=WorkerPool::new();letdiscord=Discord::new(worker_pool.tx());// This blocks the main thread! discord.start();eprintln!(&amp;#34;Good bye!&amp;#34;);}This code does couple of things:</description>
     </item>
